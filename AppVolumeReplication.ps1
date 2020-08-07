@@ -129,12 +129,20 @@ $appFolders | ForEach-Object {
     $contentLibraryFiles = Get-ChildItem -recurse -path "$($target.psDriveName):\$contentLibraryFolderUUID\" | Where-Object { !$_.PSIsContainer } | Where-Object name -notlike ".*"
 
     $contentLibraryFiles | ForEach-Object {
-        $childFolder = $_.name.Substring(0,$_.name.LastIndexOf("_")).split("__")[0]
-        $name = $_.name.Substring(0,$_.name.LastIndexOf("_")).split("__")[1]
+        if ($_.name.IndexOf("__") >= 0) {
+            $childFolder = $_.name.Substring(0,$_.name.LastIndexOf("_")).split("__")[0]
+            $name = $_.name.Substring(0,$_.name.LastIndexOf("_")).split("__")[1]
+            $folderPath = "$folderUUID\$subFolder\$childFolder"
+        }
+        else {
+            $name = $_.name.Substring(0,$_.name.LastIndexOf("_"))
+            $folderPath = "$folderUUID\$subFolder"
+        }
+
         $path = "$($target.psDriveName):\$($_.DatastoreFullPath.split(' ')[1])"
         $extension = $_.name.Split('.')[-1]
-        $destinationFolder = "$($target.psDriveName):\$folderUUID\$subFolder\$childFolder"
-        $absolutePath = "$($target.psDriveName):\$folderUUID\$subFolder\$childFolder\$name.$extension"
+        $destinationFolder = "$($target.psDriveName):\$folderPath"
+        $absolutePath = "$($target.psDriveName):\$folderPath\$name.$extension"
 
         $existingFiles = Get-ChildItem $destinationFolder
 
@@ -142,7 +150,7 @@ $appFolders | ForEach-Object {
             Write-Output "$name.$extension already exists in $rootFolder."
         }
         else {
-            Write-Output "Copying $childFolder\$name.$extension..."
+            Write-Output "Copying $name.$extension to $folderPath..."
             New-Item -ItemType Folder -Path $destinationFolder -ErrorAction SilentlyContinue
             Copy-Item -Path $path -Destination $absolutePath
         }
